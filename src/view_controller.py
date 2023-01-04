@@ -135,7 +135,6 @@ def generate_script(sender, app_data):
                     'type': 'rawmd',
                     'rawmd': section.markdown
                 })
-            print(f'The section is now:\n{section.export_to_markdown()}\n\n')
     filepath = dpg.get_value('filepath_input')
     assert filepath[-3:] == '.md'
     with open(f'{__file__}/../{filepath}', 'w') as output:

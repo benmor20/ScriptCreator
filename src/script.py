@@ -62,7 +62,7 @@ class CharacterLine(Section):
     def export_to_markdown(self):
         drctn_str = ''
         if self.stage_drctn is not None:
-            drctn_str = f'*({self.stage_drctn})*'
+            drctn_str = f' *({self.stage_drctn})*'
         return f'**{self.character.upper()}**:{drctn_str}\n\n{self.line}'
 
     def copy(self) -> 'CharacterLine':
@@ -250,10 +250,10 @@ class Script(Section):
         return self._scenes[scene_num - 1]
 
     def export_to_markdown(self) -> str:
-        if self._title is None:
+        if self.title is None:
             raise ValueError('Cannot export script to Markdown: title is not set.')
-        subtitle = '' if self._subtitle is None else f'\n\n{self._subtitle}'
-        title = f'# {self._title}{subtitle}'
+        subtitle = '' if self.subtitle is None else f'\n\n{self.subtitle}'
+        title = f'# {self.title}{subtitle}'
         scenes = '\n\n<br/>\n\n<br/>\n\n'.join(s.export_to_markdown() for s in self._scenes)
         return f'{title}\n\n<br/>\n\n<br/>\n\n{scenes}'
 
