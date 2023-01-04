@@ -16,14 +16,14 @@ def main(data):
             vc.SCRIPT.add_location(loc)
         for idx, scene_data in enumerate(data['scenes']):
             vc.SCRIPT.add_scene()
-            scene = vc.SCRIPT.get_scene(idx + 1)
+            scene_num = idx + 1
             for section in scene_data:
                 if section['type'] == 'line':
-                    scene.add_section(vc.CharacterLine(section['name'], section['line'], section['drctn']))
+                    vc.SCRIPT.add_section(scene_num, vc.CharacterLine(section['name'], section['line'], section['drctn']))
                 elif section['type'] == 'drctn':
-                    scene.add_section(vc.StageDirection(section['drctn']))
+                    vc.SCRIPT.add_section(scene_num, vc.StageDirection(section['drctn']))
                 elif section['type'] == 'rawmd':
-                    scene.add_section(vc.RawSection(section['rawmd']))
+                    vc.SCRIPT.add_section(scene_num, vc.RawSection(section['rawmd']))
     vc.run()
 
 

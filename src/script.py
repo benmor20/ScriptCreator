@@ -225,29 +225,41 @@ class Script(Section):
         """
         self._scenes.append(Scene(len(self._scenes) + 1, *sections))
 
-    def update_scene(self, scene_num: int, new_scene: Scene):
+    def add_section(self, scene_num: int, section: Section):
         """
-        Switches out the given scene number for the new scene
+        Adds a section to the given scene
 
-        :param scene_num: an int, the scene number to switch out
-        :param new_scene: the Scene to set the scene number to
+        :param scene_num: an int, the scene to add the section to
+        :param section: a Section, the section to add
         """
-        if scene_num > len(self._scenes):
-            raise IndexError(f'Tried to reset scene {scene_num}, but there are only {len(self._scenes)} scenes.')
-        if scene_num == 0:
-            raise IndexError('There is no scene 0')
-        if scene_num < 0:
-            scene_num += self.num_scenes + 1
-        if scene_num != new_scene.scene_num:
-            raise ValueError(f'Cannot set scene {scene_num} to be Scene {new_scene.scene_num}')
-        self._scenes[scene_num - 1] = new_scene
+        self._scenes[self._scene_num_to_idx(scene_num)].add_section(section)
 
     def get_scene(self, scene_num: int) -> Scene:
-        if scene_num == 0:
-            raise IndexError('There is no scene 0')
-        if scene_num < 0:
-            scene_num += self.num_scenes + 1
-        return self._scenes[scene_num - 1]
+        """
+        Gets a copy of the given scene
+
+        :param scene_num: an int, the Scene to return
+        :return: a Scene, a copy of the scene with the scene number
+        """
+        return self._scenes[self._scene_num_to_idx(scene_num)].copy()
+
+    def get_scene_length(self, scene_num: int) -> int:
+        """
+        Find the number of sections a given scene has
+
+        :param scene_num: an int, the scene to find the length of
+        :return: an int, the number of sections in that scene
+        """
+        return self._scenes[self._scene_num_to_idx(scene_num)].num_sections
+
+    def delete_section(self, scene_num: int, section_idx: int):
+        """
+        Deletes a section from the given scene
+
+        :param scene_num: an int, the scene to delete the section from
+        :param section_idx: an int, the section to delete
+        """
+        self._scenes[self._scene_num_to_idx(scene_num)].delete_section(section_idx)
 
     def export_to_markdown(self) -> str:
         if self.title is None:
@@ -265,3 +277,18 @@ class Script(Section):
         [res.add_location(l) for l in self._locations]
         [res.add_scene(s.copy()) for s in self._scenes]
         return res
+
+    def _scene_num_to_idx(self, scene_num: int) -> int:
+        """
+        Translates the scene number to the index of that scene
+
+        :param scene_num: an int, the number of the scene
+        :return: an int, the index of the scene in the scene list
+        """
+        if scene_num > self.num_scenes:
+            raise IndexError(f'Tried to access scene {scene_num} but there are only {self.num_scenes} scenes.')
+        if scene_num == 0:
+            raise IndexError('There is no scene 0.')
+        if scene_num < 0:
+            return scene_num + self.num_scenes
+        return scene_num - 1

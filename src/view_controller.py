@@ -1,6 +1,7 @@
 """
 Defines the View and Controller for the Script Creator
 """
+import itertools
 import json
 
 import dearpygui.dearpygui as dpg
@@ -48,31 +49,27 @@ def add_section_callback_factory(scene_num: int, section_type: str, section_num:
     id_to_name = {'line': 'Character Line', 'drctn': 'Stage Direction', 'rawmd': 'Raw Markdown'}
     
     def btn_callback(sender, app_data):
-        real_section_num = section_num if section_num > -1 else SCRIPT.get_scene(scene_num).num_sections
+        real_section_num = section_num if section_num > -1 else SCRIPT.get_scene_length(scene_num)
         tag = f'scene_{scene_num}_{real_section_num}'
         with dpg.collapsing_header(label=id_to_name[section_type], tag=tag, parent=f'Scene {scene_num}',
                                    before=f'Scene {scene_num} Buttons', indent=20, user_data=scene_num):
             if section_type == 'line':
-                SCRIPT.get_scene(scene_num).add_section(CharacterLine('', ''))
                 with dpg.group(horizontal=True, horizontal_spacing=50):
                     char_name = left_label(dpg.add_combo, 'Character:', items=SCRIPT.characters, tag=tag+'_char_name', width=150)
                     CHARACTER_INPUTS.append(char_name)
                     left_label(dpg.add_input_text, 'Stage Direction:', tag=tag+'_char_drctn', width=400)
                 left_label(dpg.add_input_text, 'Line:', tag=tag+'_char_line', width=600, height=200, multiline=True)
             elif section_type == 'drctn':
-                SCRIPT.get_scene(scene_num).add_section(StageDirection(''))
                 left_label(dpg.add_input_text, 'Stage Direction:', tag=tag+'_drctn', width=600, height=200, multiline=True)
             elif section_type == 'rawmd':
-                SCRIPT.get_scene(scene_num).add_section(RawSection(''))
                 left_label(dpg.add_input_text, 'Markdown:', tag=tag+'_rawmd', width=600, height=200, multiline=True)
     return btn_callback
 
 
 def delete_section(sender, app_data):
     scene_num = int(sender.split('_')[1])
-    scene = SCRIPT.get_scene(scene_num)
-    section_idx = scene.num_sections - 1
-    scene.delete_section(section_idx)
+    section_idx = SCRIPT.get_scene_length(scene_num) - 1
+    SCRIPT.delete_section(scene_num, section_idx)
     dpg.delete_item(f'scene_{scene_num}_{section_idx}')
 
 
@@ -103,37 +100,40 @@ def generate_script(sender, app_data):
     }
     for scene_idx in range(SCRIPT.num_scenes):
         scene_num = scene_idx + 1
-        scene = SCRIPT.get_scene(scene_num)
         data['scenes'].append([])
-        for section_idx in range(scene.num_sections):
+        for section_idx in itertools.count():
             tag = f'scene_{scene_num}_{section_idx}'
-            section = scene.get_section(section_idx)
-            if isinstance(section, CharacterLine):
-                # assert dpg.get_item_user_data(tag) == 'line'
-                section.character = dpg.get_value(tag+'_char_name')
+            if tag not in dpg.get_aliases():
+                break
+            section_type = dpg.get_item_user_data(tag)
+            if section_type == 'line':
+                character = dpg.get_value(tag+'_char_name')
                 drctn = dpg.get_value(tag+'_char_drctn')
                 if drctn is not None and len(drctn) > 0:
-                    section.stage_drctn = drctn
-                section.line = dpg.get_value(tag+'_char_line')
+                    stage_drctn = drctn
+                else:
+                    stage_drctn = None
+                line = dpg.get_value(tag+'_char_line')
+                SCRIPT.add_section(scene_num, CharacterLine(character, line, stage_drctn))
                 data['scenes'][-1].append({
                     'type': 'line',
-                    'name': section.character,
-                    'drctn': section.stage_drctn,
-                    'line': section.line
+                    'name': character,
+                    'drctn': stage_drctn,
+                    'line': line
                 })
-            elif isinstance(section, StageDirection):
-                # assert dpg.get_item_user_data(tag) == 'drctn'
-                section.direction = dpg.get_value(tag+'_drctn')
+            elif section_type == 'drctn':
+                direction = dpg.get_value(tag+'_drctn')
+                SCRIPT.add_section(scene_num, StageDirection(direction))
                 data['scenes'][-1].append({
                     'type': 'drctn',
-                    'drctn': section.direction
+                    'drctn': direction
                 })
-            elif isinstance(section, RawSection):
-                # assert dpg.get_item_user_data(tag) == 'rawmd'
-                section.markdown = dpg.get_value(tag+'_rawmd')
+            elif section_type == 'rawmd':
+                markdown = dpg.get_value(tag+'_rawmd')
+                SCRIPT.add_section(scene_num, RawSection(markdown))
                 data['scenes'][-1].append({
                     'type': 'rawmd',
-                    'rawmd': section.markdown
+                    'rawmd': markdown
                 })
     filepath = dpg.get_value('filepath_input')
     assert filepath[-3:] == '.md'
