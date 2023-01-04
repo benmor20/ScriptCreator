@@ -34,13 +34,13 @@ class RawSection(Section):
 
         :param markdown: a str, the lines in Markdown format
         """
-        self._markdown = markdown
+        self.markdown = markdown
 
     def export_to_markdown(self) -> str:
-        return self._markdown
+        return self.markdown
 
     def copy(self) -> 'RawSection':
-        return RawSection(self._markdown)
+        return RawSection(self.markdown)
 
 
 class CharacterLine(Section):
@@ -55,18 +55,18 @@ class CharacterLine(Section):
         :param line: a str, the character's line in Markdown format
         :param stage_direction: a str, stage direction to include before the line, or None if no direction
         """
-        self._character = character
-        self._line = line
-        self._stage_drctn = stage_direction
+        self.character = character
+        self.line = line
+        self.stage_drctn = stage_direction
 
     def export_to_markdown(self):
         drctn_str = ''
-        if self._stage_drctn is not None:
-            drctn_str = f'*({self._stage_drctn})*'
-        return f'**{self._character.upper()}**:{drctn_str}\n\n{self._line}'
+        if self.stage_drctn is not None:
+            drctn_str = f'*({self.stage_drctn})*'
+        return f'**{self.character.upper()}**:{drctn_str}\n\n{self.line}'
 
     def copy(self) -> 'CharacterLine':
-        return CharacterLine(self._character, self._line, self._stage_drctn)
+        return CharacterLine(self.character, self.line, self.stage_drctn)
 
 
 class StageDirection(Section):
@@ -79,13 +79,13 @@ class StageDirection(Section):
 
         :param direction: a str, the direction to perform in Markdown format
         """
-        self._direction = direction
+        self.direction = direction
 
     def export_to_markdown(self) -> str:
-        return f'*({self._direction})*'
+        return f'*({self.direction})*'
 
     def copy(self) -> 'StageDirection':
-        return StageDirection(self._direction)
+        return StageDirection(self.direction)
 
 
 class Scene(Section):
@@ -109,6 +109,13 @@ class Scene(Section):
     def scene_num(self) -> int:
         return self._scene_num
 
+    @property
+    def num_sections(self) -> int:
+        """
+        :return: an int, the number of sections in this scene
+        """
+        return len(self._sections)
+
     def add_section(self, section: Section):
         """
         Adds a section to this scene
@@ -116,6 +123,9 @@ class Scene(Section):
         :param section: the Section to add
         """
         self._sections.append(section)
+
+    def get_section(self, section_num: int) -> Section:
+        return self._sections[section_num]
 
     def export_to_markdown(self) -> str:
         return f'## Scene {self._scene_num}\n' + '\n\n<br/>\n\n'.join(s.export_to_markdown() for s in self._sections)
@@ -127,6 +137,10 @@ class Scene(Section):
 class Script(Section):
     """
     Represents the entire script
+
+    Attributes:
+        characters: a list of str, the characters in this Script, sorted alphabetically
+        locations: a list of str, the locations in this Script, sorted alphabetically
     """
     def __init__(self):
         """
@@ -138,6 +152,21 @@ class Script(Section):
         self._subtitle: Optional[str] = None
         self._scenes: List[Scene] = []
         self._active_scene = -1
+
+    @property
+    def num_scenes(self) -> int:
+        """
+        :return: an int, the number of scenes this Script has
+        """
+        return len(self._scenes)
+
+    @property
+    def characters(self) -> List[str]:
+        return sorted(self._characters)
+
+    @property
+    def locations(self) -> List[str]:
+        return sorted(self._locations)
 
     def set_title(self, title: str):
         """
@@ -194,16 +223,28 @@ class Script(Section):
         :param scene_num: an int, the scene number to switch out
         :param new_scene: the Scene to set the scene number to
         """
+        if scene_num > len(self._scenes):
+            raise IndexError(f'Tried to reset scene {scene_num}, but there are only {len(self._scenes)} scenes.')
+        if scene_num == 0:
+            raise IndexError('There is no scene 0')
+        if scene_num < 0:
+            scene_num += self.num_scenes + 1
         if scene_num != new_scene.scene_num:
             raise ValueError(f'Cannot set scene {scene_num} to be Scene {new_scene.scene_num}')
-        if scene_num > len(self._scenes):
-            raise ValueError(f'Tried to reset scene {scene_num}, but there are only {len(self._scenes)} scenes.')
-        if scene_num <= 0:
-            raise ValueError(f'The scene number must be positive (not {scene_num})')
         self._scenes[scene_num - 1] = new_scene
 
+    def get_scene(self, scene_num: int) -> Scene:
+        if scene_num == 0:
+            raise IndexError('There is no scene 0')
+        if scene_num < 0:
+            scene_num += self.num_scenes + 1
+        return self._scenes[scene_num - 1]
+
     def export_to_markdown(self) -> str:
-        title = f'<div align="center"># {self._title}\n\n{self._subtitle}</div>'
+        if self._title is None:
+            raise ValueError('Cannot export script to Markdown: title is not set.')
+        subtitle = '' if self._subtitle is None else f'\n\n{self._subtitle}'
+        title = f'<div align="center"># {self._title}{subtitle}</div>'
         scenes = '\n\n<br/>\n\n<br/>\n\n'.join(s.export_to_markdown() for s in self._scenes)
         return f'{title}\n\n<br/>\n\n<br/>\n\n{scenes}'
 
