@@ -49,7 +49,12 @@ def add_section_callback_factory(scene_num: int, section_type: str, section_num:
     id_to_name = {'line': 'Character Line', 'drctn': 'Stage Direction', 'rawmd': 'Raw Markdown'}
     
     def btn_callback(sender, app_data):
-        real_section_num = section_num if section_num > -1 else SCRIPT.get_scene_length(scene_num)
+        real_section_num = section_num
+        if real_section_num == -1:
+            for real_section_num in itertools.count():
+                if f'scene_{scene_num}_{real_section_num}' not in dpg.get_aliases():
+                    break
+        print(f'Adding section {real_section_num} to scene {scene_num}')
         tag = f'scene_{scene_num}_{real_section_num}'
         with dpg.collapsing_header(label=id_to_name[section_type], tag=tag, parent=f'Scene {scene_num}',
                                    before=f'Scene {scene_num} Buttons', indent=20, user_data=section_type):
@@ -68,9 +73,13 @@ def add_section_callback_factory(scene_num: int, section_type: str, section_num:
 
 def delete_section(sender, app_data):
     scene_num = int(sender.split('_')[1])
-    section_idx = SCRIPT.get_scene_length(scene_num) - 1
-    SCRIPT.delete_section(scene_num, section_idx)
-    dpg.delete_item(f'scene_{scene_num}_{section_idx}')
+    for section_idx in itertools.count():
+        tag = f'scene_{scene_num}_{section_idx}'
+        if tag not in dpg.get_aliases():
+            if section_idx > 0:
+                print(f'Removed section {section_idx} from scene {scene_num}')
+                dpg.delete_item(f'scene_{scene_num}_{section_idx - 1}')
+            return
 
 
 def add_scene(sender, app_data, *, scene_num: int = -1):
@@ -104,10 +113,8 @@ def generate_script(sender, app_data):
         for section_idx in itertools.count():
             tag = f'scene_{scene_num}_{section_idx}'
             if tag not in dpg.get_aliases():
-                print(f'{tag} not in aliases, done with scene {scene_num}')
                 break
             section_type = dpg.get_item_user_data(tag)
-            print(f'{tag}: {section_type}')
             if section_type == 'line':
                 character = dpg.get_value(tag+'_char_name')
                 drctn = dpg.get_value(tag+'_char_drctn')
