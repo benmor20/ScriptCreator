@@ -127,6 +127,14 @@ class Scene(Section):
     def get_section(self, section_num: int) -> Section:
         return self._sections[section_num]
 
+    def delete_section(self, section_num: int):
+        """
+        Deletes a given section
+
+        :param section_num: an int, the index of the section to delete
+        """
+        del self._sections[section_num]
+
     def export_to_markdown(self) -> str:
         return f'## Scene {self._scene_num}\n' + '\n\n<br/>\n\n'.join(s.export_to_markdown() for s in self._sections)
 
@@ -141,6 +149,8 @@ class Script(Section):
     Attributes:
         characters: a list of str, the characters in this Script, sorted alphabetically
         locations: a list of str, the locations in this Script, sorted alphabetically
+        title: a str, the title of the script
+        subtitle: a str, the subtitle for the script, or None for no subtitle
     """
     def __init__(self):
         """
@@ -148,10 +158,9 @@ class Script(Section):
         """
         self._characters: Set[str] = set()
         self._locations: Set[str] = set()
-        self._title: Optional[str] = None
-        self._subtitle: Optional[str] = None
+        self.title: Optional[str] = None
+        self.subtitle: Optional[str] = None
         self._scenes: List[Scene] = []
-        self._active_scene = -1
 
     @property
     def num_scenes(self) -> int:
@@ -174,7 +183,7 @@ class Script(Section):
 
         :param title: a str, what to set the title to
         """
-        self._title = title
+        self.title = title
 
     def set_subtitle(self, subtitle: str):
         """
@@ -182,7 +191,7 @@ class Script(Section):
 
         :param subtitle: a str, what to set the subtitle to
         """
-        self._subtitle = subtitle
+        self.subtitle = subtitle
 
     def add_character(self, character: str) -> bool:
         """

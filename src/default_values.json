@@ -1,0 +1,33 @@
+{
+  "title": "Clue",
+  "subtitle": "Adapted for the Stage by Franklin W. Olin Players",
+  "characters":  [
+    "Wadsworth",
+    "Yvette",
+    "Cook",
+    "Mustard",
+    "White",
+    "Peacock",
+    "Scarlet",
+    "Plum",
+    "Green",
+    "Boddy",
+    "Motorist",
+    "Police Officer",
+    "Telegram",
+    "Anncouncer",
+    "McCarthy"
+  ],
+  "locations": [
+    "Hall",
+    "Library",
+    "Kitchen",
+    "Study",
+    "Lounge",
+    "Basement",
+    "Attic",
+    "Bedroom",
+    "Dining Room"
+  ],
+  "scenes": []
+}
