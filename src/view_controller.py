@@ -52,7 +52,7 @@ def add_section_callback_factory(scene_num: int, section_type: str, section_num:
         real_section_num = section_num if section_num > -1 else SCRIPT.get_scene_length(scene_num)
         tag = f'scene_{scene_num}_{real_section_num}'
         with dpg.collapsing_header(label=id_to_name[section_type], tag=tag, parent=f'Scene {scene_num}',
-                                   before=f'Scene {scene_num} Buttons', indent=20, user_data=scene_num):
+                                   before=f'Scene {scene_num} Buttons', indent=20, user_data=section_type):
             if section_type == 'line':
                 with dpg.group(horizontal=True, horizontal_spacing=50):
                     char_name = left_label(dpg.add_combo, 'Character:', items=SCRIPT.characters, tag=tag+'_char_name', width=150)
@@ -104,8 +104,10 @@ def generate_script(sender, app_data):
         for section_idx in itertools.count():
             tag = f'scene_{scene_num}_{section_idx}'
             if tag not in dpg.get_aliases():
+                print(f'{tag} not in aliases, done with scene {scene_num}')
                 break
             section_type = dpg.get_item_user_data(tag)
+            print(f'{tag}: {section_type}')
             if section_type == 'line':
                 character = dpg.get_value(tag+'_char_name')
                 drctn = dpg.get_value(tag+'_char_drctn')
@@ -171,9 +173,9 @@ def run():
     dpg.create_context()
     with dpg.window(tag='Primary'):
         left_label(dpg.add_input_text, label='Title:', tag='title_input', callback=title_callback, width=200,
-                   default_value=None if SCRIPT.title is None else SCRIPT.title)
+                   default_value='' if SCRIPT.title is None else SCRIPT.title)
         left_label(dpg.add_input_text, label='Subtitle:', tag='subtitle_input', callback=subtitle_callback, width=400,
-                   height=150, multiline=True, default_value=None if SCRIPT.subtitle is None else SCRIPT.subtitle)
+                   height=150, multiline=True, default_value='' if SCRIPT.subtitle is None else SCRIPT.subtitle)
         with dpg.collapsing_header(tag='Char-Locs', label='Characters and Locations'):
             with dpg.group(horizontal=True, horizontal_spacing=100):
                 left_label(dpg.add_input_text, 'New Character:', tag='char_input', width=100, callback=char_loc_submit_callback, on_enter=True)

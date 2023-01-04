@@ -1,6 +1,8 @@
 """
 Defines the internal representation of the script
 """
+import string
+import re
 from typing import *
 from abc import ABC, abstractmethod
 
@@ -232,6 +234,10 @@ class Script(Section):
         :param scene_num: an int, the scene to add the section to
         :param section: a Section, the section to add
         """
+        if isinstance(section, StageDirection):
+            section.direction = self._modify_stage_drctn(section.direction)
+        elif isinstance(section, CharacterLine):
+            section.stage_drctn = self._modify_stage_drctn(section.stage_drctn)
         self._scenes[self._scene_num_to_idx(scene_num)].add_section(section)
 
     def get_scene(self, scene_num: int) -> Scene:
@@ -292,3 +298,32 @@ class Script(Section):
         if scene_num < 0:
             return scene_num + self.num_scenes
         return scene_num - 1
+
+    def _modify_stage_drctn(self, drctn: str) -> str:
+        """
+        Formats a stage direction
+
+        Ensures punctuation, puts the characters and locations in all caps
+
+        :param drctn: a str, the raw stage direction
+        :return: a str, the formatted stage direction
+        """
+        res = drctn + ('' if drctn[-1] in string.punctuation else '.')
+        to_capitalize = self._characters.union(self._locations)
+        for noun in to_capitalize:
+            for match in re.finditer(rf"\b{noun}'?s?\b", drctn, re.I):
+                res = res[:match.start()] + match.group().upper() + res[match.end():]
+        return res
+
+    def _modify_line(self, line: str) -> str:
+        """
+        Formats a line.
+
+        Ensures punctuation
+
+        :param line: a str, the raw line
+        :return: a str, the formatted line
+        """
+        if line[-1] not in string.punctuation:
+            return line + '.'
+        return line
