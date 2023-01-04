@@ -244,7 +244,7 @@ class Script(Section):
         if self._title is None:
             raise ValueError('Cannot export script to Markdown: title is not set.')
         subtitle = '' if self._subtitle is None else f'\n\n{self._subtitle}'
-        title = f'<div align="center"># {self._title}{subtitle}</div>'
+        title = f'# {self._title}{subtitle}'
         scenes = '\n\n<br/>\n\n<br/>\n\n'.join(s.export_to_markdown() for s in self._scenes)
         return f'{title}\n\n<br/>\n\n<br/>\n\n{scenes}'
 

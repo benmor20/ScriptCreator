@@ -84,19 +84,21 @@ def generate_script(sender, app_data):
         scene = SCRIPT.get_scene(scene_num)
         for section_idx in range(scene.num_sections):
             tag = f'scene_{scene_num}_{section_idx}'
-            if isinstance(scene, CharacterLine):
-                assert dpg.get_item_user_data(tag) == 'line'
-                scene.character = dpg.get_value(tag+'_char_name')
+            section = scene.get_section(section_idx)
+            if isinstance(section, CharacterLine):
+                # assert dpg.get_item_user_data(tag) == 'line'
+                section.character = dpg.get_value(tag+'_char_name')
                 drctn = dpg.get_value(tag+'_char_drctn')
-                if len(drctn) > 0:
-                    scene.stage_drctn = drctn
-                scene.line = dpg.get_value(tag+'_char_line')
-            elif isinstance(scene, StageDirection):
-                assert dpg.get_item_user_data(tag) == 'drctn'
-                scene.stage_drctn = dpg.get_value(tag+'_drctn')
-            elif isinstance(scene, RawSection):
-                assert dpg.get_item_user_data(tag) == 'rawmd'
-                scene.markdown = dpg.get_value(tag+'_rawmd')
+                if drctn is not None and len(drctn) > 0:
+                    section.stage_drctn = drctn
+                section.line = dpg.get_value(tag+'_char_line')
+            elif isinstance(section, StageDirection):
+                # assert dpg.get_item_user_data(tag) == 'drctn'
+                section.direction = dpg.get_value(tag+'_drctn')
+            elif isinstance(section, RawSection):
+                # assert dpg.get_item_user_data(tag) == 'rawmd'
+                section.markdown = dpg.get_value(tag+'_rawmd')
+            print(f'The section is now:\n{section.export_to_markdown()}\n\n')
     filepath = dpg.get_value('filepath_input')
     assert filepath[-3:] == '.md'
     with open(f'{__file__}/../{filepath}', 'w') as output:
