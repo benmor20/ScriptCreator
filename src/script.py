@@ -84,7 +84,7 @@ class StageDirection(Section):
         self.direction = direction
 
     def export_to_markdown(self) -> str:
-        return f'*({self.direction})*'
+        return '*(' + ')*\n\n*('.join(self.direction.split('\n\n')) + ')*'
 
     def copy(self) -> 'StageDirection':
         return StageDirection(self.direction)
@@ -237,7 +237,8 @@ class Script(Section):
         if isinstance(section, StageDirection):
             section.direction = self._modify_stage_drctn(section.direction)
         elif isinstance(section, CharacterLine):
-            section.stage_drctn = self._modify_stage_drctn(section.stage_drctn)
+            section.stage_drctn = self._modify_stage_drctn(section.stage_drctn, False)
+            section.line = self._modify_line(section.line)
         self._scenes[self._scene_num_to_idx(scene_num)].add_section(section)
 
     def get_scene(self, scene_num: int) -> Scene:
@@ -299,16 +300,22 @@ class Script(Section):
             return scene_num + self.num_scenes
         return scene_num - 1
 
-    def _modify_stage_drctn(self, drctn: str) -> str:
+    def _modify_stage_drctn(self, drctn: Optional[str], punct: bool = True) -> Optional[str]:
         """
         Formats a stage direction
 
         Ensures punctuation, puts the characters and locations in all caps
 
         :param drctn: a str, the raw stage direction
+        :param punct: a bool, True to force punctuation at the end, False to remove it
         :return: a str, the formatted stage direction
         """
-        res = drctn + ('' if drctn[-1] in string.punctuation else '.')
+        if drctn is None:
+            return None
+        if punct:
+            res = drctn + ('' if drctn[-1] in string.punctuation else '.')
+        else:
+            res = drctn[:-1] if drctn[-1] in string.punctuation else drctn
         to_capitalize = self._characters.union(self._locations)
         for noun in to_capitalize:
             for match in re.finditer(rf"\b{noun}'?s?\b", drctn, re.I):

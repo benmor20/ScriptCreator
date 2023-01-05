@@ -54,18 +54,18 @@ def add_section_callback_factory(scene_num: int, section_type: str, section_num:
             for real_section_num in itertools.count():
                 if f'scene_{scene_num}_{real_section_num}' not in dpg.get_aliases():
                     break
-        print(f'Adding section {real_section_num} to scene {scene_num}')
         tag = f'scene_{scene_num}_{real_section_num}'
         with dpg.collapsing_header(label=id_to_name[section_type], tag=tag, parent=f'Scene {scene_num}',
-                                   before=f'Scene {scene_num} Buttons', indent=20, user_data=section_type):
+                                   before=f'Scene {scene_num} Buttons', indent=20, user_data=section_type,
+                                   default_open=section_num == -1):
             if section_type == 'line':
-                with dpg.group(horizontal=True, horizontal_spacing=50):
+                with dpg.group(horizontal=True, horizontal_spacing=30):
                     char_name = left_label(dpg.add_combo, 'Character:', items=SCRIPT.characters, tag=tag+'_char_name', width=150)
                     CHARACTER_INPUTS.append(char_name)
                     left_label(dpg.add_input_text, 'Stage Direction:', tag=tag+'_char_drctn', width=400)
-                left_label(dpg.add_input_text, 'Line:', tag=tag+'_char_line', width=600, height=200, multiline=True)
+                left_label(dpg.add_input_text, 'Line:', tag=tag+'_char_line', width=400, height=200, multiline=True)
             elif section_type == 'drctn':
-                left_label(dpg.add_input_text, 'Stage Direction:', tag=tag+'_drctn', width=600, height=200, multiline=True)
+                left_label(dpg.add_input_text, 'Stage Direction:', tag=tag+'_drctn', width=400, height=200, multiline=True)
             elif section_type == 'rawmd':
                 left_label(dpg.add_input_text, 'Markdown:', tag=tag+'_rawmd', width=600, height=200, multiline=True)
     return btn_callback
@@ -88,7 +88,7 @@ def add_scene(sender, app_data, *, scene_num: int = -1):
         scene_num = SCRIPT.num_scenes
     name = f'Scene {scene_num}'
     with dpg.collapsing_header(label=name, tag=name, parent='Scenes', default_open=True, indent=20):
-        with dpg.group(horizontal=True, horizontal_spacing=20, tag=name+' Buttons'):
+        with dpg.group(horizontal=True, horizontal_spacing=20, indent=20, tag=name+' Buttons'):
             button_name = name.lower().replace(' ', '_')
             dpg.add_button(label='Add Character Line', tag=button_name+'_line',
                            callback=add_section_callback_factory(scene_num, 'line'))
@@ -110,6 +110,8 @@ def generate_script(sender, app_data):
     for scene_idx in range(SCRIPT.num_scenes):
         scene_num = scene_idx + 1
         data['scenes'].append([])
+        while SCRIPT.get_scene_length(scene_num) > 0:
+            SCRIPT.delete_section(scene_num, 0)
         for section_idx in itertools.count():
             tag = f'scene_{scene_num}_{section_idx}'
             if tag not in dpg.get_aliases():
@@ -164,7 +166,7 @@ def update_with_current_scenes():
                 section_type = 'line'
                 add_section_callback_factory(scene_num, section_type, section_idx)(None, None)
                 dpg.set_value(tag+'_char_name', section.character)
-                dpg.set_value(tag+'_char_drctn', section.stage_drctn)
+                dpg.set_value(tag+'_char_drctn', '' if section.stage_drctn is None else section.stage_drctn)
                 dpg.set_value(tag+'_char_line', section.line)
             elif isinstance(section, StageDirection):
                 section_type = 'drctn'
@@ -174,6 +176,8 @@ def update_with_current_scenes():
                 section_type = 'rawmd'
                 add_section_callback_factory(scene_num, section_type, section_idx)(None, None)
                 dpg.set_value(tag+'_rawmd', section.markdown)
+        for _ in range(scene.num_sections):
+            SCRIPT.delete_section(scene_num, 0)
 
 
 def run():
@@ -194,7 +198,7 @@ def run():
                 dpg.add_text('Characters:' + ('' if len(SCRIPT.characters) == 0 else '\n'+'\n'.join(SCRIPT.characters)), tag='chars')
                 dpg.add_text('Locations:' + ('' if len(SCRIPT.locations) == 0 else '\n'+'\n'.join(SCRIPT.locations)), tag='locs')
         with dpg.collapsing_header(tag='Scenes', label='Scenes', default_open=True):
-            dpg.add_button(label='Add Scene', tag='add_scene', callback=add_scene)
+            dpg.add_button(label='Add Scene', tag='add_scene', callback=add_scene, indent=20)
         with dpg.group(horizontal=True, horizontal_spacing=20):
             left_label(dpg.add_input_text, 'Save To:', tag='filepath_input', width=200)
             dpg.add_button(label='Generate Script', callback=generate_script)
