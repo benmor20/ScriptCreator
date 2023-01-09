@@ -45,8 +45,12 @@ def left_label(add_func, label: str, **kwargs):
         return add_func(**kwargs)
 
 
-def add_section_callback_factory(scene_num: int, section_type: str, section_num: int = -1):
+def add_section_callback_factory(scene_num: int, section_type: str, section_num: int = -1, before: int = None):
     id_to_name = {'line': 'Character Line', 'drctn': 'Stage Direction', 'rawmd': 'Raw Markdown'}
+    if before is None:
+        before_tag = f'Scene {scene_num} Buttons'
+    else:
+        before_tag = f'scene_{scene_num}_{before}'
     
     def btn_callback(sender, app_data):
         real_section_num = section_num
@@ -56,7 +60,7 @@ def add_section_callback_factory(scene_num: int, section_type: str, section_num:
                     break
         tag = f'scene_{scene_num}_{real_section_num}'
         with dpg.collapsing_header(label=id_to_name[section_type], tag=tag, parent=f'Scene {scene_num}',
-                                   before=f'Scene {scene_num} Buttons', indent=20, user_data=section_type,
+                                   before=before_tag, indent=20, user_data=section_type,
                                    default_open=section_num == -1):
             if section_type == 'line':
                 with dpg.group(horizontal=True, horizontal_spacing=30):
@@ -68,7 +72,14 @@ def add_section_callback_factory(scene_num: int, section_type: str, section_num:
                 left_label(dpg.add_input_text, 'Stage Direction:', tag=tag+'_drctn', width=400, height=200, multiline=True)
             elif section_type == 'rawmd':
                 left_label(dpg.add_input_text, 'Markdown:', tag=tag+'_rawmd', width=600, height=200, multiline=True)
-            dpg.add_button(label='Remove Section', tag=tag+'_remove', callback=delete_section)
+            with dpg.group(horizontal=True, horizontal_spacing=20, indent=20):
+                dpg.add_button(label='Remove Section', tag=tag+'_remove', callback=delete_section)
+                dpg.add_button(label='Add Line Before', tag=tag+'_add_line',
+                               callback=add_section_callback_factory(scene_num, 'line', before=real_section_num))
+                dpg.add_button(label='Add Direction Before', tag=tag+'_add_drctn',
+                               callback=add_section_callback_factory(scene_num, 'drctn', before=real_section_num))
+                dpg.add_button(label='Add Markdown Before', tag=tag+'_add_rawmd',
+                               callback=add_section_callback_factory(scene_num, 'rawmd', before=real_section_num))
     return btn_callback
 
 
@@ -105,10 +116,6 @@ def generate_script(sender, app_data):
         data['scenes'].append([])
         while SCRIPT.get_scene_length(scene_num) > 0:
             SCRIPT.delete_section(scene_num, 0)
-        print(f'Scene {scene_num}')
-        for child in dpg.get_item_children(f'Scene {scene_num}', 1):
-            print(dpg.get_item_alias(child))
-        print()
         for child in dpg.get_item_children(f'Scene {scene_num}', 1):
             tag = dpg.get_item_alias(child)
             if tag == f'Scene {scene_num} Buttons':
