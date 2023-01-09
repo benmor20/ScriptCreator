@@ -40,7 +40,10 @@ def char_loc_submit_callback(sender, app_data):
 
 
 def left_label(add_func, label: str, **kwargs):
-    with dpg.group(horizontal=True):
+    if 'indent' not in kwargs:
+        kwargs['indent'] = 0
+    with dpg.group(horizontal=True, indent=kwargs['indent']):
+        del kwargs['indent']
         dpg.add_text(label + ' ' * (ALIGN_LEN - len(label)))
         return add_func(**kwargs)
 
@@ -48,7 +51,7 @@ def left_label(add_func, label: str, **kwargs):
 def add_section_callback_factory(scene_num: int, section_type: str, section_num: int = -1, before: int = None):
     id_to_name = {'line': 'Character Line', 'drctn': 'Stage Direction', 'rawmd': 'Raw Markdown'}
     if before is None:
-        before_tag = f'Scene {scene_num} Buttons'
+        before_tag = 0
     else:
         before_tag = f'scene_{scene_num}_{before}'
     
@@ -59,19 +62,22 @@ def add_section_callback_factory(scene_num: int, section_type: str, section_num:
                 if f'scene_{scene_num}_{real_section_num}' not in dpg.get_aliases():
                     break
         tag = f'scene_{scene_num}_{real_section_num}'
-        with dpg.collapsing_header(label=id_to_name[section_type], tag=tag, parent=f'Scene {scene_num}',
+        with dpg.collapsing_header(label=id_to_name[section_type], tag=tag, parent=f'Scene {scene_num} Sections',
                                    before=before_tag, indent=20, user_data=section_type,
                                    default_open=section_num == -1):
+            with dpg.group(horizontal=True, horizontal_spacing=20, indent=20):
+                dpg.add_button(label='^', callback=lambda: dpg.move_item_up(tag))
+                dpg.add_button(label='v', callback=lambda: dpg.move_item_down(tag))
             if section_type == 'line':
-                with dpg.group(horizontal=True, horizontal_spacing=30):
+                with dpg.group(horizontal=True, horizontal_spacing=30, indent=20):
                     char_name = left_label(dpg.add_combo, 'Character:', items=SCRIPT.characters, tag=tag+'_char_name', width=150)
                     CHARACTER_INPUTS.append(char_name)
                     left_label(dpg.add_input_text, 'Stage Direction:', tag=tag+'_char_drctn', width=400)
-                left_label(dpg.add_input_text, 'Line:', tag=tag+'_char_line', width=400, height=200, multiline=True)
+                left_label(dpg.add_input_text, 'Line:', tag=tag+'_char_line', width=400, height=200, multiline=True, indent=20)
             elif section_type == 'drctn':
-                left_label(dpg.add_input_text, 'Stage Direction:', tag=tag+'_drctn', width=400, height=200, multiline=True)
+                left_label(dpg.add_input_text, 'Stage Direction:', tag=tag+'_drctn', width=400, height=200, multiline=True, indent=20)
             elif section_type == 'rawmd':
-                left_label(dpg.add_input_text, 'Markdown:', tag=tag+'_rawmd', width=600, height=200, multiline=True)
+                left_label(dpg.add_input_text, 'Markdown:', tag=tag+'_rawmd', width=600, height=200, multiline=True, indent=20)
             with dpg.group(horizontal=True, horizontal_spacing=20, indent=20):
                 dpg.add_button(label='Remove Section', tag=tag+'_remove', callback=delete_section)
                 dpg.add_button(label='Add Line Before', tag=tag+'_add_line',
@@ -93,6 +99,8 @@ def add_scene(sender, app_data, *, scene_num: int = -1):
         scene_num = SCRIPT.num_scenes
     name = f'Scene {scene_num}'
     with dpg.collapsing_header(label=name, tag=name, parent='Scenes', default_open=True, indent=20):
+        with dpg.group(tag=name+' Sections'):
+            pass
         with dpg.group(horizontal=True, horizontal_spacing=20, indent=20, tag=name+' Buttons'):
             button_name = name.lower().replace(' ', '_')
             dpg.add_button(label='Add Character Line', tag=button_name+'_line',
