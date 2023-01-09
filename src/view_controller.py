@@ -68,18 +68,12 @@ def add_section_callback_factory(scene_num: int, section_type: str, section_num:
                 left_label(dpg.add_input_text, 'Stage Direction:', tag=tag+'_drctn', width=400, height=200, multiline=True)
             elif section_type == 'rawmd':
                 left_label(dpg.add_input_text, 'Markdown:', tag=tag+'_rawmd', width=600, height=200, multiline=True)
+            dpg.add_button(label='Remove Section', tag=tag+'_remove', callback=delete_section)
     return btn_callback
 
 
 def delete_section(sender, app_data):
-    scene_num = int(sender.split('_')[1])
-    for section_idx in itertools.count():
-        tag = f'scene_{scene_num}_{section_idx}'
-        if tag not in dpg.get_aliases():
-            if section_idx > 0:
-                print(f'Removed section {section_idx} from scene {scene_num}')
-                dpg.delete_item(f'scene_{scene_num}_{section_idx - 1}')
-            return
+    dpg.delete_item(sender[:-7])
 
 
 def add_scene(sender, app_data, *, scene_num: int = -1):
@@ -96,7 +90,6 @@ def add_scene(sender, app_data, *, scene_num: int = -1):
                            callback=add_section_callback_factory(scene_num, 'drctn'))
             dpg.add_button(label='Add Raw Markdown', tag=button_name+'_rawmd',
                            callback=add_section_callback_factory(scene_num, 'rawmd'))
-            dpg.add_button(label='Remove Section', tag=button_name+'_remove', callback=delete_section)
 
 
 def generate_script(sender, app_data):
@@ -112,10 +105,14 @@ def generate_script(sender, app_data):
         data['scenes'].append([])
         while SCRIPT.get_scene_length(scene_num) > 0:
             SCRIPT.delete_section(scene_num, 0)
-        for section_idx in itertools.count():
-            tag = f'scene_{scene_num}_{section_idx}'
-            if tag not in dpg.get_aliases():
-                break
+        print(f'Scene {scene_num}')
+        for child in dpg.get_item_children(f'Scene {scene_num}', 1):
+            print(dpg.get_item_alias(child))
+        print()
+        for child in dpg.get_item_children(f'Scene {scene_num}', 1):
+            tag = dpg.get_item_alias(child)
+            if tag == f'Scene {scene_num} Buttons':
+                continue
             section_type = dpg.get_item_user_data(tag)
             if section_type == 'line':
                 character = dpg.get_value(tag+'_char_name')
