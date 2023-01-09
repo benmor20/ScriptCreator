@@ -1,0 +1,13 @@
+h1 {
+   text-align: center;
+}
+
+h2 {
+    text-align: center;
+    page-break-before: always;
+}
+
+p {
+    margin: 0.4cm 3.5cm;
+    page-break-inside: avoid;
+}

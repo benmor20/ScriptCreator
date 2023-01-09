@@ -19,8 +19,7 @@ def main(data):
             scene_num = idx + 1
             for section in scene_data:
                 if section['type'] == 'line':
-                    vc.SCRIPT.add_section(scene_num, vc.CharacterLine(section['name'], section['line'],
-                                                                      section['drctn'] if len(section['drctn']) > 2 else None))
+                    vc.SCRIPT.add_section(scene_num, vc.CharacterLine(section['name'], section['line'], section['drctn']))
                 elif section['type'] == 'drctn':
                     vc.SCRIPT.add_section(scene_num, vc.StageDirection(section['drctn']))
                 elif section['type'] == 'rawmd':

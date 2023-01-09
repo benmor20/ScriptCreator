@@ -65,7 +65,7 @@ class CharacterLine(Section):
         drctn_str = ''
         if self.stage_drctn is not None:
             drctn_str = f' *({self.stage_drctn})*'
-        return f'**{self.character.upper()}**:{drctn_str}\n\n{self.line}'
+        return f'**{self.character.upper()}**{drctn_str}:<br>\n{self.line}'
 
     def copy(self) -> 'CharacterLine':
         return CharacterLine(self.character, self.line, self.stage_drctn)
@@ -84,7 +84,7 @@ class StageDirection(Section):
         self.direction = direction
 
     def export_to_markdown(self) -> str:
-        return '*(' + ')*\n\n*('.join(self.direction.split('\n\n')) + ')*'
+        return f'*({self.direction})*'
 
     def copy(self) -> 'StageDirection':
         return StageDirection(self.direction)
@@ -138,7 +138,7 @@ class Scene(Section):
         del self._sections[section_num]
 
     def export_to_markdown(self) -> str:
-        return f'## Scene {self._scene_num}\n' + '\n\n<br/>\n\n'.join(s.export_to_markdown() for s in self._sections)
+        return f'## Scene {self._scene_num}\n\n' + '\n\n'.join(s.export_to_markdown() for s in self._sections)
 
     def copy(self) -> 'Scene':
         return Scene(self._scene_num, *[s.copy() for s in self._sections])
@@ -235,7 +235,13 @@ class Script(Section):
         :param section: a Section, the section to add
         """
         if isinstance(section, StageDirection):
-            section.direction = self._modify_stage_drctn(section.direction)
+            drctns = section.direction.split('\n')
+            for drctn in drctns:
+                if len(drctn) == 0:
+                    continue
+                sec = StageDirection(self._modify_stage_drctn(drctn))
+                self._scenes[self._scene_num_to_idx(scene_num)].add_section(sec)
+            return
         elif isinstance(section, CharacterLine):
             section.stage_drctn = self._modify_stage_drctn(section.stage_drctn, False)
             section.line = self._modify_line(section.line)
@@ -273,8 +279,8 @@ class Script(Section):
             raise ValueError('Cannot export script to Markdown: title is not set.')
         subtitle = '' if self.subtitle is None else f'\n\n{self.subtitle}'
         title = f'# {self.title}{subtitle}'
-        scenes = '\n\n<br/>\n\n<br/>\n\n'.join(s.export_to_markdown() for s in self._scenes)
-        return f'{title}\n\n<br/>\n\n<br/>\n\n{scenes}'
+        scenes = f'\n\n'.join(s.export_to_markdown() for s in self._scenes)
+        return f'{title}\n\n{scenes}'
 
     def copy(self) -> 'Script':
         res = Script()
