@@ -30,7 +30,7 @@ def char_loc_submit_callback(sender, app_data):
     list_tag = 'chars' if is_char else 'locs'
     if is_char:
         SCRIPT.add_character(input_value)
-        characters = SCRIPT.characters
+        characters = ['All', 'Others'] + SCRIPT.characters
         for char_inp in CHARACTER_INPUTS:
             dpg.configure_item(char_inp, items=characters)
     else:
@@ -70,16 +70,30 @@ def add_section_callback_factory(scene_num: int, section_type: str, section_num:
                 dpg.add_button(label='v', callback=lambda: dpg.move_item_down(tag))
             if section_type == 'line':
                 with dpg.group(horizontal=True, horizontal_spacing=30, indent=20):
-                    char_name = left_label(dpg.add_combo, 'Character:', items=SCRIPT.characters, tag=tag+'_char_name', width=150)
+                    characters = ['All', 'Others'] + SCRIPT.characters
+                    char_name = left_label(dpg.add_combo, 'Character:', items=characters, tag=tag+'_char_name', width=150)
                     CHARACTER_INPUTS.append(char_name)
                     left_label(dpg.add_input_text, 'Stage Direction:', tag=tag+'_char_drctn', width=400)
+                with dpg.collapsing_header(label='Advanced Character Naming', tag=tag+'_adv_name', indent=20):
+                    left_label(dpg.add_input_text, 'Custom:', indent=20, tag=tag+'_adv_custom', width=200)
+                    characters = dpg.get_item_configuration(tag+'_char_name')['items']
+                    max_len = max(len(c) for c in characters)
+                    for start_idx in range(0, len(characters), 3):
+                        with dpg.group(indent=20, horizontal=True, horizontal_spacing=20):
+                            for col in range(3):
+                                idx = start_idx + col
+                                if idx >= len(characters):
+                                    break
+                                char = characters[start_idx + col]
+                                dpg.add_checkbox(label=char+(' ' * (max_len - len(char))), tag=f'{tag}_adv_name_{char.lower()}')
+                    dpg.add_button(indent=20, label='Submit', tag=tag+'_adv_name_submit', callback=submit_advanced_name)
                 left_label(dpg.add_input_text, 'Line:', tag=tag+'_char_line', width=400, height=200, multiline=True, indent=20)
             elif section_type == 'drctn':
                 left_label(dpg.add_input_text, 'Stage Direction:', tag=tag+'_drctn', width=400, height=200, multiline=True, indent=20)
             elif section_type == 'rawmd':
                 left_label(dpg.add_input_text, 'Markdown:', tag=tag+'_rawmd', width=600, height=200, multiline=True, indent=20)
             with dpg.group(horizontal=True, horizontal_spacing=20, indent=20):
-                dpg.add_button(label='Remove Section', tag=tag+'_remove', callback=delete_section)
+                dpg.add_button(label='Remove Section', tag=tag+'_remove', callback=lambda s: dpg.delete_item(s[:-7]))
                 dpg.add_button(label='Add Line Before', tag=tag+'_add_line',
                                callback=add_section_callback_factory(scene_num, 'line', before=real_section_num))
                 dpg.add_button(label='Add Direction Before', tag=tag+'_add_drctn',
@@ -89,8 +103,28 @@ def add_section_callback_factory(scene_num: int, section_type: str, section_num:
     return btn_callback
 
 
-def delete_section(sender, app_data):
-    dpg.delete_item(sender[:-7])
+def submit_advanced_name(sender, app_data):
+    print(f'In submit callback: {sender}')
+    base_tag = sender[:-16]
+    name_tag = base_tag+'_char_name'
+    names_to_add = []
+    custom = dpg.get_value(base_tag+'_adv_custom')
+    print(f'Custom name is {custom}')
+    if custom is not None and len(custom) > 0:
+        print('Adding to names')
+        names_to_add.append(custom)
+    for char in dpg.get_item_configuration(name_tag)['items']:
+        val = dpg.get_value(f'{base_tag}_adv_name_{char.lower()}')
+        print(f'{char}: {val}')
+        if val:
+            print(f'Adding {char} to names')
+            names_to_add.append(char)
+    if len(names_to_add) == 0:
+        print('No names - returning')
+        return
+    new_val = '/'.join(names_to_add)
+    print(f'Setting {base_tag} name to {new_val}')
+    dpg.set_value(name_tag, new_val)
 
 
 def add_scene(sender, app_data, *, scene_num: int = -1):
@@ -124,10 +158,8 @@ def generate_script(sender, app_data):
         data['scenes'].append([])
         while SCRIPT.get_scene_length(scene_num) > 0:
             SCRIPT.delete_section(scene_num, 0)
-        for child in dpg.get_item_children(f'Scene {scene_num}', 1):
+        for child in dpg.get_item_children(f'Scene {scene_num} Sections', 1):
             tag = dpg.get_item_alias(child)
-            if tag == f'Scene {scene_num} Buttons':
-                continue
             section_type = dpg.get_item_user_data(tag)
             if section_type == 'line':
                 character = dpg.get_value(tag+'_char_name')
