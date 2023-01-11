@@ -62,6 +62,7 @@ def add_section_callback_factory(scene_num: int, section_type: str, section_num:
                 if f'scene_{scene_num}_{real_section_num}' not in dpg.get_aliases():
                     break
         tag = f'scene_{scene_num}_{real_section_num}'
+        print(tag)
         with dpg.collapsing_header(label=id_to_name[section_type], tag=tag, parent=f'Scene {scene_num} Sections',
                                    before=before_tag, indent=20, user_data=section_type,
                                    default_open=section_num == -1):
@@ -146,6 +147,7 @@ def add_scene(sender, app_data, *, scene_num: int = -1):
 
 
 def generate_script(sender, app_data):
+    print('Starting script generation...')
     data = {
         'title': SCRIPT.title,
         'subtitle': SCRIPT.subtitle,
@@ -155,6 +157,7 @@ def generate_script(sender, app_data):
     }
     for scene_idx in range(SCRIPT.num_scenes):
         scene_num = scene_idx + 1
+        print(f'Compiling Scene {scene_num}...')
         data['scenes'].append([])
         while SCRIPT.get_scene_length(scene_num) > 0:
             SCRIPT.delete_section(scene_num, 0)
@@ -192,10 +195,12 @@ def generate_script(sender, app_data):
                 })
     filepath = dpg.get_value('filepath_input')
     assert filepath[-3:] == '.md'
+    print('Script compiled. Exporting...')
     with open(f'{__file__}/../{filepath}', 'w') as output:
         output.write(SCRIPT.export_to_markdown())
     with open(f'{__file__}/../{filepath[:-3]}.json', 'w') as json_out:
         json.dump(data, json_out)
+    print('Done.')
 
 
 def update_with_current_scenes():
