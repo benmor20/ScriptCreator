@@ -275,17 +275,20 @@ class Script(Section):
         self._scenes[self._scene_num_to_idx(scene_num)].delete_section(section_idx)
 
     def export_to_markdown(self) -> str:
+        scenes = f'\n\n'.join(s.export_to_markdown() for s in self._scenes)
+        if len(self._scenes) == 1:
+            print('Only one scene')
+            scenes = scenes.replace('## Scene 1\n\n', '')
         if self.title is None:
-            raise ValueError('Cannot export script to Markdown: title is not set.')
+            return scenes
         subtitle = '' if self.subtitle is None else f'\n\n{self.subtitle}'
         title = f'# {self.title}{subtitle}'
-        scenes = f'\n\n'.join(s.export_to_markdown() for s in self._scenes)
         return f'{title}\n\n{scenes}'
 
     def copy(self) -> 'Script':
         res = Script()
-        res.set_title(self._title)
-        res.set_subtitle(self._subtitle)
+        res.set_title(self.title)
+        res.set_subtitle(self.subtitle)
         [res.add_character(c) for c in self._characters]
         [res.add_location(l) for l in self._locations]
         [res.add_scene(s.copy()) for s in self._scenes]
